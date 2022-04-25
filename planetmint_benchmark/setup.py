@@ -7,11 +7,11 @@ setup(
     author='BigchainDB devs',
     packages=find_packages(),
     install_requires=[
-        'bigchaindb-driver~=0.5.0',
+        'bigchaindb-driver~=0.6.2',
         'coloredlogs~=7.3.0',
         'websocket-client',
         'logstats~=0.3.0',
-        'requests~=2.19.1',
+        'requests~=2.20.0',
         'cachetools~=2.1.0',
         'websockets~=6.0.0',
         'aiohttp~=3.0.0',

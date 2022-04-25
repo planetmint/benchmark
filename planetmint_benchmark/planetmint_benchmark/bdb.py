@@ -72,7 +72,7 @@ def send(peer, tx, headers={}, mode='sync'):
     ts_accept = None
 
     try:
-        driver.transactions.send(tx, mode=mode)
+        driver.transactions.send_commit(tx)
     except Exception as e:
         ts_error = ts()
     else:
