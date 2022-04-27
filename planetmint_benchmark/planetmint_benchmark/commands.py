@@ -14,7 +14,7 @@ from queue import Empty
 import coloredlogs
 from websocket import create_connection
 
-import bigchaindb_benchmark
+import planetmint_benchmark
 
 from .utils import ts
 
@@ -33,7 +33,7 @@ def run_send(args):
     from urllib.parse import urlparse
 
 
-    ls = bigchaindb_benchmark.config['ls']
+    ls = planetmint_benchmark.config['ls']
 
     keypair = generate_keypair()
 
@@ -42,7 +42,8 @@ def run_send(args):
     WS_ENDPOINT = 'ws://{}:9985/api/v1/streams/valid_transactions'.format(urlparse(BDB_ENDPOINT).hostname)
     sent_transactions = []
 
-    requests_queue = mp.Queue(maxsize=10000)
+    print(f"QUEUE SIZE : {args.queuesize}")
+    requests_queue = mp.Queue(maxsize=args.queuesize)
     results_queue = mp.Queue()
 
     logger.info('Connecting to WebSocket %s', WS_ENDPOINT)
@@ -121,7 +122,7 @@ def run_send(args):
 
 def create_parser():
     parser = argparse.ArgumentParser(
-        description='Benchmarking tools for BigchainDB.')
+        description='Benchmarking tools for Planetmint.')
 
     parser.add_argument('--csv',
                         type=str,
@@ -132,7 +133,7 @@ def create_parser():
 
     parser.add_argument('-p', '--peer',
                         action='append',
-                        help='BigchainDB peer to use. This option can be '
+                        help='Planetmint peer to use. This option can be '
                              'used multiple times.')
 
     parser.add_argument('-a', '--auth',
@@ -174,6 +175,11 @@ def create_parser():
                              help='Threshold for number of unconfirmed transactions in tendermint mempool',
                              type=int,
                              default=5000)
+    
+    send_parser.add_argument('--queuesize', '-qs',
+                            help='The size of the message queue.',
+                            type=int,
+                            default=10000)
 
     return parser
 
@@ -208,7 +214,7 @@ def configure(args):
     ls['error'] = 0
 
     logstats.thread.start(ls)
-    bigchaindb_benchmark.config = {'ls': ls}
+    planetmint_benchmark.config = {'ls': ls}
 
 
 def main():

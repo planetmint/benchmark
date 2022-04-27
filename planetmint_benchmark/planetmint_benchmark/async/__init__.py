@@ -39,7 +39,7 @@ def init(args):
 
 def create_parser():
     parser = argparse.ArgumentParser(
-        description='Benchmarking tools for BigchainDB.')
+        description='Benchmarking tools for Planetmint.')
 
     parser.add_argument('--csv',
                         type=str,

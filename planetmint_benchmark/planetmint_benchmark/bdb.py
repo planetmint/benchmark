@@ -74,9 +74,12 @@ def send(peer, tx, headers={}, mode='sync'):
     try:
         driver.transactions.send_commit(tx)
     except Exception as e:
+        #print(f"EXCEPTION : {e}")
         ts_error = ts()
+        #print(f"EXCEPTION : {ts_error}")
     else:
         ts_accept = ts()
+        #print(f"EXCEPTION : {ts_accept}")
     return peer, tx['id'], len(dumps(tx)), ts_send, ts_accept, ts_error
 
 

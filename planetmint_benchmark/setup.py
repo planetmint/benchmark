@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='bigchaindb_benchmark',
-    version='0.0.1',
+    name='planetmint_benchmark',
+    version='0.2.0',
     description='Command Line Interface to push transactions to BigchainDB',
     author='BigchainDB devs',
     packages=find_packages(),
@@ -13,13 +13,13 @@ setup(
         'logstats~=0.3.0',
         'requests~=2.20.0',
         'cachetools~=2.1.0',
-        'websockets~=6.0.0',
-        'aiohttp~=3.0.0',
+        'websockets>=9.1.0',
+        'aiohttp>=3.7.4',
     ],
     entry_points={
         'console_scripts': [
-            'bigchaindb-benchmark=bigchaindb_benchmark.commands:main',
-            'bigchaindb-blaster=bigchaindb_benchmark.async.__init__:main',
+            'planetmint-benchmark=planetmint_benchmark.commands:main',
+            'planetmint-blaster=planetmint_benchmark.async.__init__:main',
         ],
     },
 )
