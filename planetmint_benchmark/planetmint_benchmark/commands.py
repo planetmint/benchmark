@@ -42,7 +42,7 @@ def run_send(args):
     WS_ENDPOINT = 'ws://{}:9985/api/v1/streams/valid_transactions'.format(urlparse(BDB_ENDPOINT).hostname)
     sent_transactions = []
 
-    requests_queue = mp.Queue(maxsize=10000)
+    requests_queue = mp.Queue(maxsize=args.requests)
     results_queue = mp.Queue()
 
     logger.info('Connecting to WebSocket %s', WS_ENDPOINT)
