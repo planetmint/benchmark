@@ -85,19 +85,42 @@ def send(peer, tx, headers={}, mode='sync'):
 
 def worker_send(args, requests_queue, results_queue):
     tries = 0
-    while True:
-        tx = requests_queue.get()
-        result = send(random.choice(args.peer),
-                      tx,
-                      args.auth,
-                      args.mode)
-        if result[5]:
-            print('Error, going to sleep for %ss', 2**tries)
-            sleep(2**tries)
-            tries = min(tries + 1, 4)
-        else:
-            tries = 0
-        results_queue.put(result)
+    holder = datetime.now()
+    checker = holder.replace(minute=time)
+    
+    if checker.timestamp() <= holder.timestamp():
+        if requests_queue.size() is not None:
+            while True:
+                
+                tx = requests_queue.get()
+                result = send(random.choice(args.peer),
+                                tx,
+                                args.auth,
+                                args.mode)
+                
+                if result[5]:
+                    
+                    sleep(2**tries)
+                    tries = min(tries + 1, 4)
+                else:
+                    tries = 0
+                results_queue.put(result)
+    else:
+            while True:
+                
+                tx = requests_queue.get()
+                result = send(random.choice(args.peer),
+                                tx,
+                                args.auth,
+                                args.mode)
+                
+                if result[5]:
+                    
+                    sleep(2**tries)
+                    tries = min(tries + 1, 4)
+                else:
+                    tries = 0
+                results_queue.put(result)
 
 
 def worker_generate(args, requests_queue):
