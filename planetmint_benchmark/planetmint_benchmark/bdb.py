@@ -20,6 +20,8 @@ from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
+start_time = datetime.now().timestamp()
+
 def _generate(keypair=None, size=None):
     driver = BigchainDB()
 
@@ -82,33 +84,35 @@ def send(peer, tx, headers={}, mode='sync'):
         #print(f"EXCEPTION : {ts_accept}")
     return peer, tx['id'], len(dumps(tx)), ts_send, ts_accept, ts_error
 
+def get_timelft( args ):
+    now = datetime.now().timestamp()
+    return (args.time * 60 + args.starttime) - now
+
 
 def worker_send(args, requests_queue, results_queue):
     from datetime import datetime
     tries = 0
-    holder = datetime.now()
-    checker = holder.replace(minute=args.time)
     
-    if checker.timestamp() <= holder.timestamp():
-        if requests_queue.size() is not None:
-            while True:
-                
-                tx = requests_queue.get()
-                result = send(random.choice(args.peer),
-                                tx,
-                                args.auth,
-                                args.mode)
-                
-                if result[5]:
+    if args.time :
+        if get_timelft( args ) >= 0:
+            if requests_queue.qsize() is not None:
+                while True:
                     
-                    sleep(2**tries)
-                    tries = min(tries + 1, 4)
-                else:
-                    tries = 0
-                results_queue.put(result)
+                    tx = requests_queue.get()
+                    result = send(random.choice(args.peer),
+                                    tx,
+                                    args.auth,
+                                    args.mode)
+                    
+                    if result[5]:
+                        
+                        sleep(2**tries)
+                        tries = min(tries + 1, 4)
+                    else:
+                        tries = 0
+                    results_queue.put(result)
     else:
             while True:
-                
                 tx = requests_queue.get()
                 result = send(random.choice(args.peer),
                                 tx,

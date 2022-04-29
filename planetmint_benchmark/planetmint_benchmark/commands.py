@@ -8,6 +8,7 @@ from threading import Thread
 from time import sleep
 import json
 import multiprocessing as mp
+from datetime import datetime
 
 from queue import Empty
 
@@ -74,7 +75,9 @@ def run_send(args):
                 ls()
                 OUT_FILE.flush()
                 PENDING = False
-
+    
+    args.starttime = datetime.now().timestamp()
+    
     Thread(target=listen, args=(ws, ), daemon=False).start()
     Thread(target=ping, args=(ws, ), daemon=True).start()
     Thread(target=sample_queue, args=(requests_queue, ), daemon=True).start()
