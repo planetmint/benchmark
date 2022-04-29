@@ -11,7 +11,7 @@ from itertools import count
 from time import sleep
 
 from .utils import ts
-
+from datetime import datetime
 from bigchaindb_driver import BigchainDB
 from bigchaindb_driver.exceptions import TransportError
 from bigchaindb_driver.crypto import generate_keypair
