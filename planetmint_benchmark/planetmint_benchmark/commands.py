@@ -1,3 +1,4 @@
+from re import T
 import sys
 import base64
 import argparse
@@ -36,18 +37,18 @@ def run_send(args):
     ls = bigchaindb_benchmark.config['ls']
 
     keypair = generate_keypair()
-
+    
     BDB_ENDPOINT = args.peer[0]
     #WS_ENDPOINT = 'ws://{}:26657/websocket'.format(urlparse(BDB_ENDPOINT).hostname)
     WS_ENDPOINT = 'ws://{}:9985/api/v1/streams/valid_transactions'.format(urlparse(BDB_ENDPOINT).hostname)
     sent_transactions = []
-
+    
     requests_queue = mp.Queue(maxsize=args.requests)
     results_queue = mp.Queue()
-
+    time = args.time
     logger.info('Connecting to WebSocket %s', WS_ENDPOINT)
     ws = create_connection(WS_ENDPOINT)
-
+    
     def sample_queue(requests_queue):
         while True:
             ls['queue'] = requests_queue.qsize()
@@ -61,8 +62,10 @@ def run_send(args):
     def listen(ws):
         global PENDING
         while PENDING:
+            
             result = ws.recv()
             transaction_id = json.loads(result)['transaction_id']
+            
             if transaction_id in TRACKER:
                 TRACKER[transaction_id]['ts_commit'] = ts()
                 CSV_WRITER.writerow(TRACKER[transaction_id])
@@ -79,6 +82,10 @@ def run_send(args):
     Thread(target=sample_queue, args=(requests_queue, ), daemon=True).start()
 
     logger.info('Start sending transactions to %s', BDB_ENDPOINT)
+    if time is not None:
+        logger.info('Executing script for %u seconds', time)
+    
+    
     for i in range(args.processes):
         mp.Process(target=bdb.worker_generate,
                    args=(args, requests_queue)).start()
@@ -86,9 +93,12 @@ def run_send(args):
     while not requests_queue.full():
         sleep(.1)
 
+    if requests_queue.full() is True:
+        requests_queue(maxsize=args.requests)
+
     for i in range(args.processes):
         mp.Process(target=bdb.worker_send,
-                   args=(args, requests_queue, results_queue),
+                   args=(args, requests_queue, results_queue,time),
                    daemon=True).start()
 
     while PENDING:
@@ -104,12 +114,13 @@ def run_send(args):
             'ts_commit': None,
             'ts_error': ts_error,
         }
-
+        
         if ts_accept:
             ls['accept'] += 1
             delta = (ts_accept - ts_send)
             status = 'Success'
             ls['mempool'] = ls['accept'] - ls['commit']
+            CSV_WRITER.writerow(TRACKER[txid])
         else:
             ls['error'] += 1
             delta = (ts_error - ts_send)
@@ -174,6 +185,8 @@ def create_parser():
                              help='Threshold for number of unconfirmed transactions in tendermint mempool',
                              type=int,
                              default=5000)
+
+    send_parser.add_argument('--time' ,'-t', help="time based constraint",type=int , default=0)
 
     return parser
 

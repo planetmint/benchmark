@@ -1,3 +1,4 @@
+from unittest import result
 import requests
 from requests.exceptions import ConnectionError, Timeout
 from websocket import create_connection
@@ -9,7 +10,7 @@ from json import dumps
 from uuid import uuid4
 from itertools import count
 from time import sleep
-
+from datetime import datetime
 from .utils import ts
 
 from bigchaindb_driver import BigchainDB
@@ -28,8 +29,8 @@ def _generate(keypair=None, size=None):
     else:
         alice = generate_keypair()
 
-    asset = None
-
+    asset = {'data' : {'_':'x'}}
+    
     if size:
         asset = {'data': {'_': 'x' * size}}
 
@@ -66,36 +67,62 @@ def get_unconfirmed_tx(tm_http_api):
 
 def send(peer, tx, headers={}, mode='sync'):
     driver = BigchainDB(peer, headers=headers)
-
+   
     ts_send = ts()
     ts_error = None
     ts_accept = None
-
+    
+    
     try:
-        driver.transactions.send_commit(tx)
+        result = driver.transactions.send_commit(tx)
+       
     except Exception as e:
-        ts_error = ts()
+        ts_error = ts() 
     else:
         ts_accept = ts()
     return peer, tx['id'], len(dumps(tx)), ts_send, ts_accept, ts_error
 
 
-def worker_send(args, requests_queue, results_queue):
+def worker_send(args, requests_queue, results_queue,sizeOfQueue,time=None):
     tries = 0
-    while True:
-        tx = requests_queue.get()
-        result = send(random.choice(args.peer),
-                      tx,
-                      args.auth,
-                      args.mode)
-        if result[5]:
-            print('Error, going to sleep for %ss', 2**tries)
-            sleep(2**tries)
-            tries = min(tries + 1, 4)
-        else:
-            tries = 0
-        results_queue.put(result)
-
+    holder = datetime.now()
+    checker = holder.replace(minute=time)
+    
+    if checker.timestamp() <= holder.timestamp():
+        if requests_queue.size() is not None:
+            while True:
+                
+                tx = requests_queue.get()
+                result = send(random.choice(args.peer),
+                                tx,
+                                args.auth,
+                                args.mode)
+                
+                if result[5]:
+                    
+                    sleep(2**tries)
+                    tries = min(tries + 1, 4)
+                else:
+                    tries = 0
+                results_queue.put(result)
+    else:
+        if requests_queue.size() is not None:
+            while True:
+                
+                tx = requests_queue.get()
+                result = send(random.choice(args.peer),
+                                tx,
+                                args.auth,
+                                args.mode)
+                
+                if result[5]:
+                    
+                    sleep(2**tries)
+                    tries = min(tries + 1, 4)
+                else:
+                    tries = 0
+                results_queue.put(result)
+        
 
 def worker_generate(args, requests_queue):
     keypair = generate_keypair()
