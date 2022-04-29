@@ -15,6 +15,7 @@ setup(
         'cachetools~=2.1.0',
         'websockets>=9.1.0',
         'aiohttp>=3.7.4',
+        'datetime'
     ],
     entry_points={
         'console_scripts': [

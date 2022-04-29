@@ -84,9 +84,10 @@ def send(peer, tx, headers={}, mode='sync'):
 
 
 def worker_send(args, requests_queue, results_queue):
+    from datetime import datetime
     tries = 0
     holder = datetime.now()
-    checker = holder.replace(minute=time)
+    checker = holder.replace(minute=args.time)
     
     if checker.timestamp() <= holder.timestamp():
         if requests_queue.size() is not None:
