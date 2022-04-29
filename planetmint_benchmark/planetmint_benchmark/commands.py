@@ -183,6 +183,7 @@ def create_parser():
                             help='The size of the message queue.',
                             type=int,
                             default=10000)
+    send_parser.add_argument('--time' ,'-t', help="time based constraint",type=int , default=0)
 
     return parser
 
