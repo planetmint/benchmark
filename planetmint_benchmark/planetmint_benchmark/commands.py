@@ -1,3 +1,4 @@
+import re
 import sys
 import base64
 import argparse
@@ -5,7 +6,7 @@ import logging
 from functools import partial
 from itertools import cycle, repeat
 from threading import Thread
-from time import sleep
+from time import sleep, time
 import json
 import multiprocessing as mp
 from datetime import datetime
@@ -43,10 +44,10 @@ def run_send(args):
     WS_ENDPOINT = 'ws://{}:9985/api/v1/streams/valid_transactions'.format(urlparse(BDB_ENDPOINT).hostname)
     sent_transactions = []
 
-    print(f"QUEUE SIZE : {args.queuesize}")
+    time = args.time
     requests_queue = mp.Queue(maxsize=args.queuesize)
     results_queue = mp.Queue()
-
+    start_time = datetime.now().timestamp()
     logger.info('Connecting to WebSocket %s', WS_ENDPOINT)
     ws = create_connection(WS_ENDPOINT)
 
@@ -87,12 +88,16 @@ def run_send(args):
         mp.Process(target=bdb.worker_generate,
                    args=(args, requests_queue)).start()
 
+    if time is not None and requests_queue.full() is False:
+        requests_queue.maxsize = 1000
+        if bdb.get_timelft(args, start_time) >= 0 :
+            exit(0)
+    
     while not requests_queue.full():
         sleep(.1)
+        if requests_queue.full() is False:
+            exit(0)
 
-    if requests_queue.full() is not True:
-        requests_queue(maxsize=args.requests)
-        
     for i in range(args.processes):
         mp.Process(target=bdb.worker_send,
                    args=(args, requests_queue, results_queue),

@@ -76,17 +76,17 @@ def send(peer, tx, headers={}, mode='sync'):
     try:
         driver.transactions.send_commit(tx)
     except Exception as e:
-        #print(f"EXCEPTION : {e}")
+        
         ts_error = ts()
-        #print(f"EXCEPTION : {ts_error}")
+        
     else:
         ts_accept = ts()
-        #print(f"EXCEPTION : {ts_accept}")
+        
     return peer, tx['id'], len(dumps(tx)), ts_send, ts_accept, ts_error
 
-def get_timelft( args ):
+def get_timelft( args, start_time):
     now = datetime.now().timestamp()
-    return (args.time * 60 + args.starttime) - now
+    return (args.time * 60 + start_time) - now
 
 
 def worker_send(args, requests_queue, results_queue):
@@ -94,7 +94,7 @@ def worker_send(args, requests_queue, results_queue):
     tries = 0
     
     if args.time :
-        if get_timelft( args ) >= 0:
+        if get_timelft( args , start_time ) >= 0:
             if requests_queue.qsize() is not None:
                 while True:
                     
