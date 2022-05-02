@@ -84,17 +84,17 @@ def send(peer, tx, headers={}, mode='sync'):
         
     return peer, tx['id'], len(dumps(tx)), ts_send, ts_accept, ts_error
 
-def get_timelft( args, start_time):
+def get_timelft( duration, start_time):
     now = datetime.now().timestamp()
-    return (args.time * 60 + start_time) - now
+    time_delta = (duration + start_time) - now
+    return time_delta
 
 
 def worker_send(args, requests_queue, results_queue):
     from datetime import datetime
     tries = 0
-    
-    if args.time :
-        if get_timelft( args , start_time ) >= 0:
+    if args.time >0:
+        if get_timelft( args.time , start_time ) >= 0:
             if requests_queue.qsize() is not None:
                 while True:
                     
@@ -111,6 +111,8 @@ def worker_send(args, requests_queue, results_queue):
                     else:
                         tries = 0
                     results_queue.put(result)
+                    if get_timelft(args.time, args.starttime) < 0:
+                        exit(0)
     else:
             while True:
                 tx = requests_queue.get()
@@ -129,6 +131,16 @@ def worker_send(args, requests_queue, results_queue):
 
 
 def worker_generate(args, requests_queue):
-    keypair = generate_keypair()
-    for tx in generate(keypair=keypair, size=args.size, amount=args.requests_per_worker):
-        requests_queue.put(tx)
+    _amount = args.requests_per_worker
+    if args.time > 0:
+        while True:
+            _amount = args.queuesize +10
+            keypair = generate_keypair()
+            for tx in generate(keypair=keypair, size=args.size, amount=_amount):
+                requests_queue.put(tx)
+            if get_timelft(args.time, args.starttime) < 0:
+                exit(0)
+    else:
+        keypair = generate_keypair()
+        for tx in generate(keypair=keypair, size=args.size, amount=_amount):
+            requests_queue.put(tx)

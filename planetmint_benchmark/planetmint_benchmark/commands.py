@@ -29,11 +29,14 @@ TRACKER = {}
 CSV_WRITER = None
 OUT_FILE = None
 PENDING = True
+START_TIME = 0
+DURATION = 0
 
 def run_send(args):
+    global START_TIME
+    global DURATION
     from bigchaindb_driver.crypto import generate_keypair
     from urllib.parse import urlparse
-
 
     ls = planetmint_benchmark.config['ls']
 
@@ -48,65 +51,89 @@ def run_send(args):
     requests_queue = mp.Queue(maxsize=args.queuesize)
     results_queue = mp.Queue()
     start_time = datetime.now().timestamp()
+    START_TIME = start_time
+    DURATION = args.time
     logger.info('Connecting to WebSocket %s', WS_ENDPOINT)
-    ws = create_connection(WS_ENDPOINT)
+    logger.info( f"TIME: {args.time} ")
+    ws = create_connection(WS_ENDPOINT, timeout=5)
 
-    def sample_queue(requests_queue):
+    def check_abort(duration, starttime):
+        if bdb.get_timelft(time, starttime) <= 0:
+            return True
+        else:
+            return False
+
+    def sample_queue(requests_queue, args):
         while True:
             ls['queue'] = requests_queue.qsize()
             sleep(1)
+            if check_abort(args.time, args.starttime):
+                exit(0)
 
-    def ping(ws):
+
+    def ping(ws, args):
+        global PENDING
         while PENDING:
             ws.ping()
             sleep(2)
+            if check_abort(args.time, args.starttime):
+                exit(0)
 
-    def listen(ws):
+    def listen(ws,args):
         global PENDING
         while PENDING:
-            result = ws.recv()
-            transaction_id = json.loads(result)['transaction_id']
-            if transaction_id in TRACKER:
-                TRACKER[transaction_id]['ts_commit'] = ts()
-                CSV_WRITER.writerow(TRACKER[transaction_id])
-                del TRACKER[transaction_id]
-                ls['commit'] += 1
-                ls['mempool'] = ls['accept'] - ls['commit']
-            if not TRACKER:
-                ls()
-                OUT_FILE.flush()
+            if check_abort(args.time, args.starttime):
                 PENDING = False
+                exit(0)
+            try:
+                result = ws.recv()
+            except:
+                continue
+            else:
+                transaction_id = json.loads(result)['transaction_id']
+                if transaction_id in TRACKER:
+                    TRACKER[transaction_id]['ts_commit'] = ts()
+                    CSV_WRITER.writerow(TRACKER[transaction_id])
+                    del TRACKER[transaction_id]
+                    ls['commit'] += 1
+                    ls['mempool'] = ls['accept'] - ls['commit']
+                if not TRACKER or check_abort(args.time, args.starttime):
+                    ls()
+                    OUT_FILE.flush()
+                    PENDING = False
+                    exit(0)
     
     args.starttime = datetime.now().timestamp()
     
-    Thread(target=listen, args=(ws, ), daemon=False).start()
-    Thread(target=ping, args=(ws, ), daemon=True).start()
-    Thread(target=sample_queue, args=(requests_queue, ), daemon=True).start()
+    Thread(target=listen, args=(ws,args,), daemon=False).start()
+    Thread(target=ping, args=(ws,args,), daemon=True).start()
+    Thread(target=sample_queue, args=(requests_queue, args, ), daemon=True).start()
 
+    print(f"PROCESSES: {args.processes}")
     logger.info('Start sending transactions to %s', BDB_ENDPOINT)
     for i in range(args.processes):
         mp.Process(target=bdb.worker_generate,
                    args=(args, requests_queue)).start()
-
-    if time is not None and requests_queue.full() is False:
-        requests_queue.maxsize = 1000
-        if bdb.get_timelft(args, start_time) >= 0 :
-            exit(0)
+        
+    print(f"started GENERATION state, queue size: {args.queuesize}")
     
     while not requests_queue.full():
         sleep(.1)
-        if requests_queue.full() is False:
-            exit(0)
 
+    print(f"entering SENDING state")
     for i in range(args.processes):
         mp.Process(target=bdb.worker_send,
                    args=(args, requests_queue, results_queue),
                    daemon=True).start()
-
+    global PENDING
     while PENDING:
+        if check_abort(args.time, args.starttime):
+            exit(0)
         try:
-            peer, txid, size, ts_send, ts_accept, ts_error = results_queue.get(timeout=1)
+            peer, txid, size, ts_send, ts_accept, ts_error = results_queue.get(timeout=0.1)
         except Empty:
+            continue
+        except:
             continue
         TRACKER[txid] = {
             'txid': txid,
@@ -123,14 +150,15 @@ def run_send(args):
             status = 'Success'
             ls['mempool'] = ls['accept'] - ls['commit']
             CSV_WRITER.writerow(TRACKER[txid])
-        else:
+        else:    print( f"TIME: {args.time} ")
             ls['error'] += 1
             delta = (ts_error - ts_send)
             status = 'Error'
             CSV_WRITER.writerow(TRACKER[txid])
             del TRACKER[txid]
-
+        
         logger.debug('%s: %s to %s [%ims]', status, txid, peer, delta)
+    exit(0)
 
 def create_parser():
     parser = argparse.ArgumentParser(
@@ -211,7 +239,14 @@ def configure(args):
     CSV_WRITER.writeheader()
 
     def emit(stats):
-        logger.info('Processing transactions, '
+        global PENDING
+        global DURATION
+        global START_TIME
+        if bdb.get_timelft(DURATION, START_TIME) <= 0:
+            SystemExit()
+        if not PENDING:
+            exit(0)
+        logger.info('Processing transactions CONFIGDUDE, '
             'queue: %s (%s tx/s), accepted: %s (%s tx/s), committed %s (%s tx/s), errored %s (%s tx/s), mempool %s (%s tx/s)',
             stats['queue'], stats.get('queue.speed', 0),
             stats['accept'], stats.get('accept.speed', 0),
