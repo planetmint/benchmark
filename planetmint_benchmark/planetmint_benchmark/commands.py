@@ -150,7 +150,7 @@ def run_send(args):
             status = 'Success'
             ls['mempool'] = ls['accept'] - ls['commit']
             CSV_WRITER.writerow(TRACKER[txid])
-        else:    print( f"TIME: {args.time} ")
+        else:    
             ls['error'] += 1
             delta = (ts_error - ts_send)
             status = 'Error'
