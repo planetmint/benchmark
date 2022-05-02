@@ -86,7 +86,7 @@ def send(peer, tx, headers={}, mode='sync'):
 
 def get_timelft( duration, start_time):
     now = datetime.now().timestamp()
-    time_delta = (duration + start_time) - now
+    time_delta = (duration *60 + start_time) - now
     return time_delta
 
 
