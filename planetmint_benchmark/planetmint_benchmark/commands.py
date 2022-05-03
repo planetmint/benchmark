@@ -43,9 +43,12 @@ def run_send(args):
     #WS_ENDPOINT = 'ws://{}:26657/websocket'.format(urlparse(BDB_ENDPOINT).hostname)
     WS_ENDPOINT = 'ws://{}:9985/api/v1/streams/valid_transactions'.format(urlparse(BDB_ENDPOINT).hostname)
     sent_transactions = []
-
+    requests_queue=None
     time = args.time
-    requests_queue = mp.Queue(maxsize=args.queuesize)
+    if time is not None:
+        requests_queue = mp.Queue(maxsize=10000)
+    else:
+        requests_queue = mp.Queue(args.requests)
     results_queue = mp.Queue()
     start_time = datetime.now().timestamp()
     logger.info('Connecting to WebSocket %s', WS_ENDPOINT)
@@ -64,6 +67,12 @@ def run_send(args):
     def listen(ws):
         global PENDING
         while PENDING:
+            if time is not None and requests_queue.full() is False:
+                requests_queue.maxsize = 1000
+                if bdb.get_timelft(args, start_time) >= 0 :
+                    sys.exit()
+            if requests_queue.full() is False and time is None:
+                sys.exit()
             result = ws.recv()
             transaction_id = json.loads(result)['transaction_id']
             if transaction_id in TRACKER:
@@ -88,15 +97,13 @@ def run_send(args):
         mp.Process(target=bdb.worker_generate,
                    args=(args, requests_queue)).start()
 
-    if time is not None and requests_queue.full() is False:
-        requests_queue.maxsize = 1000
-        if bdb.get_timelft(args, start_time) >= 0 :
-            exit(0)
+    
+    
+    
     
     while not requests_queue.full():
         sleep(.1)
-        if requests_queue.full() is False:
-            exit(0)
+        
 
     for i in range(args.processes):
         mp.Process(target=bdb.worker_send,
