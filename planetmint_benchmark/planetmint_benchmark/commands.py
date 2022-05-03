@@ -8,6 +8,7 @@ from itertools import cycle, repeat
 from threading import Thread
 from time import sleep, time
 import json
+import os
 import multiprocessing as mp
 from datetime import datetime
 
@@ -29,7 +30,7 @@ TRACKER = {}
 CSV_WRITER = None
 OUT_FILE = None
 PENDING = True
-
+CHECKER = None
 def run_send(args):
     from bigchaindb_driver.crypto import generate_keypair
     from urllib.parse import urlparse
@@ -66,13 +67,14 @@ def run_send(args):
 
     def listen(ws):
         global PENDING
+        global CHECKER
         while PENDING:
             if time is not None and requests_queue.full() is False:
                 requests_queue.maxsize = 1000
                 if bdb.get_timelft(args, start_time) >= 0 :
-                    sys.exit()
+                    CHECKER = False
             if requests_queue.full() is False and time is None:
-                sys.exit()
+                CHECKER = False
             result = ws.recv()
             transaction_id = json.loads(result)['transaction_id']
             if transaction_id in TRACKER:
@@ -98,14 +100,12 @@ def run_send(args):
                    args=(args, requests_queue)).start()
 
     
-    
-    
-    
     while not requests_queue.full():
         sleep(.1)
         
 
     for i in range(args.processes):
+        
         mp.Process(target=bdb.worker_send,
                    args=(args, requests_queue, results_queue),
                    daemon=True).start()
@@ -207,8 +207,10 @@ def configure(args):
     global CSV_WRITER
     global OUT_FILE
     coloredlogs.install(level=args.log_level, logger=logger)
-
+    global CHECKER
     import csv
+    if CHECKER is False:
+        os._exit(0)
     OUT_FILE = open(args.csv, 'w')
 
     CSV_WRITER = csv.DictWriter(
