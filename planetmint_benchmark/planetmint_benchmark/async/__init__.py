@@ -56,7 +56,7 @@ def create_parser():
         "-p",
         "--peer",
         action="append",
-        help="BigchainDB peer to use. This option can be " "used multiple times.",
+        help="Planetmint peer to use. This option can be " "used multiple times.",
     )
 
     parser.add_argument("--host", type=str, default="localhost")

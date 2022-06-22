@@ -1,10 +1,7 @@
-import re
 import sys
-import base64
 import argparse
 import logging
-from functools import partial
-from itertools import cycle, repeat
+
 from threading import Thread
 from time import sleep, time
 import json
@@ -38,19 +35,15 @@ CHECKER = None
 def run_send(args):
     global START_TIME
     global DURATION
-    from bigchaindb_driver.crypto import generate_keypair
     from urllib.parse import urlparse
 
     ls = planetmint_benchmark.config["ls"]
-
-    keypair = generate_keypair()
 
     BDB_ENDPOINT = args.peer[0]
     # WS_ENDPOINT = 'ws://{}:26657/websocket'.format(urlparse(BDB_ENDPOINT).hostname)
     WS_ENDPOINT = "ws://{}:9985/api/v1/streams/valid_transactions".format(
         urlparse(BDB_ENDPOINT).hostname
     )
-    sent_transactions = []
     requests_queue = None
     time = args.time
     if time is not None:
@@ -183,7 +176,7 @@ def run_send(args):
             "ts_commit": None,
             "ts_error": ts_error,
         }
-
+        logger.info("Peer  %s, txid %s", peer, txid)
         if ts_accept:
             ls["accept"] += 1
             delta = ts_accept - ts_send

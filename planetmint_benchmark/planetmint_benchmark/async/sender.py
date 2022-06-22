@@ -10,9 +10,9 @@ import aiohttp
 import coloredlogs
 import websockets
 
-from bigchaindb_driver import BigchainDB
-from bigchaindb_driver.exceptions import TransportError
-from bigchaindb_driver.crypto import generate_keypair
+from planetmint_driver import Planetmint
+from planetmint_driver.exceptions import TransportError
+from planetmint_driver.crypto import generate_keypair
 
 from . import utils
 

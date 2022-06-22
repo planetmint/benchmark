@@ -3,8 +3,8 @@ from json import loads, dumps
 from uuid import uuid4
 import logging
 
-from bigchaindb_driver import BigchainDB
-from bigchaindb_driver.crypto import generate_keypair
+from planetmint_driver import Planetmint
+from planetmint_driver.crypto import generate_keypair
 
 
 log = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ def encode(tx):
 
 
 def generate(keypair=None, size=None):
-    driver = BigchainDB()
+    driver = Planetmint()
 
     if not keypair:
         keypair = generate_keypair()

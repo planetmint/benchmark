@@ -1,6 +1,5 @@
 import requests
 from requests.exceptions import ConnectionError, Timeout
-from websocket import create_connection
 import logging
 import random
 
@@ -12,9 +11,8 @@ from time import sleep
 
 from .utils import ts
 from datetime import datetime
-from bigchaindb_driver import BigchainDB
-from bigchaindb_driver.exceptions import TransportError
-from bigchaindb_driver.crypto import generate_keypair
+from planetmint_driver import Planetmint
+from planetmint_driver.crypto import generate_keypair
 from cachetools.func import ttl_cache
 from urllib.parse import urlparse
 
@@ -24,7 +22,7 @@ start_time = datetime.now().timestamp()
 
 
 def _generate(keypair=None, size=None):
-    driver = BigchainDB()
+    driver = Planetmint()
 
     if keypair:
         alice = keypair
@@ -71,7 +69,7 @@ def get_unconfirmed_tx(tm_http_api):
 
 
 def send(peer, tx, headers={}, mode="sync"):
-    driver = BigchainDB(peer, headers=headers)
+    driver = Planetmint(peer, headers=headers)
 
     ts_send = ts()
     ts_error = None

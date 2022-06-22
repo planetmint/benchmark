@@ -7,7 +7,7 @@ setup(
     author="Planetmint Developers",
     packages=find_packages(),
     install_requires=[
-        "bigchaindb-driver~=0.6.2",
+        "planetmint-driver",
         "coloredlogs~=7.3.0",
         "websocket-client",
         "logstats~=0.3.0",
