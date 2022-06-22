@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='planetmint_benchmark',
-    version='0.2.0',
-    description='Command Line Interface to push transactions to BigchainDB',
-    author='BigchainDB devs',
+    name='planetmint-benchmark',
+    version='0.3.0',
+    description='Command Line Interface to push transactions to Planetmint nodes or clusters',
+    author='Planetmint Developers',
     packages=find_packages(),
     install_requires=[
         'bigchaindb-driver~=0.6.2',
