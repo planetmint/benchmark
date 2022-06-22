@@ -96,7 +96,7 @@ def run_send(args):
                 exit(0)
             if time is not None and requests_queue.full() is False:
                 requests_queue.maxsize = 1000
-                if bdb.get_timelft(args, start_time) >= 0:
+                if bdb.get_timelft(args.time, args.starttime) >= 0:
                     CHECKER = False
             if requests_queue.full() is False and time is None:
                 CHECKER = False

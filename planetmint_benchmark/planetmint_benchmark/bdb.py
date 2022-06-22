@@ -100,7 +100,7 @@ def worker_send(args, requests_queue, results_queue):
 
     tries = 0
     if args.time > 0:
-        if get_timelft(args.time, start_time) >= 0:
+        if get_timelft(args.time, args.starttime) >= 0:
             if requests_queue.qsize() is not None:
                 while True:
 
