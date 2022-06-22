@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 
 def encode(tx):
-    return base64.b64encode(dumps(tx).encode('utf8')).decode('utf8')
+    return base64.b64encode(dumps(tx).encode("utf8")).decode("utf8")
 
 
 def generate(keypair=None, size=None):
@@ -23,16 +23,17 @@ def generate(keypair=None, size=None):
     asset = None
 
     if size:
-        asset = {'data': {'_': 'x' * size}}
+        asset = {"data": {"_": "x" * size}}
 
     prepared_creation_tx = driver.transactions.prepare(
-        operation='CREATE',
+        operation="CREATE",
         signers=keypair.public_key,
         asset=asset,
-        metadata={'_': str(uuid4())})
+        metadata={"_": str(uuid4())},
+    )
 
     fulfilled_creation_tx = driver.transactions.fulfill(
-        prepared_creation_tx,
-        private_keys=keypair.private_key)
+        prepared_creation_tx, private_keys=keypair.private_key
+    )
 
     return fulfilled_creation_tx

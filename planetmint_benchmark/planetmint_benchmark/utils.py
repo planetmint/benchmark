@@ -30,27 +30,27 @@ def start(parser, argv, scope, callback_before=None):
 
     # look up in the current scope for a function called 'run_<command>'
     # replacing all the dashes '-' with the lowercase character '_'
-    func = scope.get('run_' + args.command.replace('-', '_'))
+    func = scope.get("run_" + args.command.replace("-", "_"))
 
     # if no command has been found, raise a `NotImplementedError`
     if not func:
-        raise NotImplementedError('Command `{}` not yet implemented'.
-                                  format(args.command))
+        raise NotImplementedError(
+            "Command `{}` not yet implemented".format(args.command)
+        )
 
     if args.peer is None:
-        args.peer = ['http://localhost:9984,localhost:27017']
+        args.peer = ["http://localhost:9984,localhost:27017"]
 
     if args.requests < args.processes and args.time == 0:
-        
+
         args.processes = args.requests
         args.requests_per_worker = 1
     else:
         args.requests_per_worker = args.requests // args.processes
 
     if args.auth:
-        app_id, app_key = args.auth.split(':')
-        args.auth = {'app_id': app_id,
-                     'app_key': app_key}
+        app_id, app_key = args.auth.split(":")
+        args.auth = {"app_id": app_id, "app_key": app_key}
     else:
         args.auth = {}
 
@@ -61,7 +61,6 @@ def start(parser, argv, scope, callback_before=None):
 
 
 class unpack:
-
     def __init__(self, f):
         self.f = f
 

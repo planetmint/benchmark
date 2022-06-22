@@ -18,7 +18,6 @@ def start(processes=mp.cpu_count()):
         p = mp.Process(target=worker, args=(queue,))
         p.start()
 
-    log.info('Started %s transaction generators',
-             processes)
+    log.info("Started %s transaction generators", processes)
 
     return queue

@@ -66,7 +66,7 @@ def run_send(args):
     ws = create_connection(WS_ENDPOINT, timeout=5)
 
     def check_abort(duration, starttime):
-        if bdb.get_timelft(time, starttime) <= 0:
+        if bdb.get_timelft(duration, starttime) <= 0:
             return True
         else:
             return False

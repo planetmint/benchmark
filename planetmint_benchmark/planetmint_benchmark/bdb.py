@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 start_time = datetime.now().timestamp()
 
+
 def _generate(keypair=None, size=None):
     driver = BigchainDB()
 
@@ -33,17 +34,18 @@ def _generate(keypair=None, size=None):
     asset = None
 
     if size:
-        asset = {'data': {'_': 'x' * size}}
+        asset = {"data": {"_": "x" * size}}
 
     prepared_creation_tx = driver.transactions.prepare(
-        operation='CREATE',
+        operation="CREATE",
         signers=alice.public_key,
         asset=asset,
-        metadata={'_': str(uuid4())})
+        metadata={"_": str(uuid4())},
+    )
 
     fulfilled_creation_tx = driver.transactions.fulfill(
-        prepared_creation_tx,
-        private_keys=alice.private_key)
+        prepared_creation_tx, private_keys=alice.private_key
+    )
 
     return fulfilled_creation_tx
 
@@ -54,19 +56,21 @@ def generate(keypair=None, size=None, amount=None):
             break
         yield _generate(keypair, size)
 
+
 @ttl_cache(ttl=10)
 def get_unconfirmed_tx(tm_http_api):
-    num_unconfirmed_txs_api = '/num_unconfirmed_txs'
-    tm_http_api = tm_http_api.strip('/')
+    num_unconfirmed_txs_api = "/num_unconfirmed_txs"
+    tm_http_api = tm_http_api.strip("/")
     url = tm_http_api + num_unconfirmed_txs_api
     try:
         resp = requests.get(url)
         if resp.status_code == requests.codes.ok:
-            return int(resp.json()['result']['n_txs'])
+            return int(resp.json()["result"]["n_txs"])
     except:
         raise
 
-def send(peer, tx, headers={}, mode='sync'):
+
+def send(peer, tx, headers={}, mode="sync"):
     driver = BigchainDB(peer, headers=headers)
 
     ts_send = ts()
@@ -76,36 +80,35 @@ def send(peer, tx, headers={}, mode='sync'):
     try:
         driver.transactions.send_commit(tx)
     except Exception as e:
-        
+
         ts_error = ts()
-        
+
     else:
         ts_accept = ts()
-        
-    return peer, tx['id'], len(dumps(tx)), ts_send, ts_accept, ts_error
 
-def get_timelft( duration, start_time):
+    return peer, tx["id"], len(dumps(tx)), ts_send, ts_accept, ts_error
+
+
+def get_timelft(duration, start_time):
     now = datetime.now().timestamp()
-    time_delta = (duration *60 + start_time) - now
+    time_delta = (int(duration) * 60 + start_time) - now
     return time_delta
 
 
 def worker_send(args, requests_queue, results_queue):
     from datetime import datetime
+
     tries = 0
-    if args.time >0:
-        if get_timelft( args.time , start_time ) >= 0:
+    if args.time > 0:
+        if get_timelft(args.time, start_time) >= 0:
             if requests_queue.qsize() is not None:
                 while True:
-                    
+
                     tx = requests_queue.get()
-                    result = send(random.choice(args.peer),
-                                    tx,
-                                    args.auth,
-                                    args.mode)
-                    
+                    result = send(random.choice(args.peer), tx, args.auth, args.mode)
+
                     if result[5]:
-                        
+
                         sleep(2**tries)
                         tries = min(tries + 1, 4)
                     else:
@@ -114,27 +117,24 @@ def worker_send(args, requests_queue, results_queue):
                     if get_timelft(args.time, args.starttime) < 0:
                         exit(0)
     else:
-            while True:
-                tx = requests_queue.get()
-                result = send(random.choice(args.peer),
-                                tx,
-                                args.auth,
-                                args.mode)
-                
-                if result[5]:
-                    
-                    sleep(2**tries)
-                    tries = min(tries + 1, 4)
-                else:
-                    tries = 0
-                results_queue.put(result)
+        while True:
+            tx = requests_queue.get()
+            result = send(random.choice(args.peer), tx, args.auth, args.mode)
+
+            if result[5]:
+
+                sleep(2**tries)
+                tries = min(tries + 1, 4)
+            else:
+                tries = 0
+            results_queue.put(result)
 
 
 def worker_generate(args, requests_queue):
     _amount = args.requests_per_worker
     if args.time > 0:
         while True:
-            _amount = args.queuesize +10
+            _amount = args.queuesize + 10
             keypair = generate_keypair()
             for tx in generate(keypair=keypair, size=args.size, amount=_amount):
                 requests_queue.put(tx)
