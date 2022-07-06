@@ -18,11 +18,12 @@ M_COMMIT = []
 ts_min = []
 ts_max = []
 
-f, p = plt.subplots(2, 2)
+f, p = plt.subplots(1, 2)
 longest = 0
 
 _, filename = os.path.split(sys.argv[1])
 plt.suptitle(filename)
+plt.title(filename)
 
 
 def to_seconds(s):
@@ -51,22 +52,26 @@ for csvfile in sys.argv[1:]:
 
     # tps_accept.index = pd.to_timedelta(tps_accept, 's')
     # tps_commit.index = pd.to_timedelta(tps_commit, 's')
-    print(f"TPS accepted : {tps_accept}")
+    # print(f"TPS accepted : {tps_accept}"# )
 
     H_ACCEPT.append(d["d_accept"])
-    # H_COMMIT.append(d['d_commit'])
-    print("DUMP")
-    print(d["d_accept"].quantile([0.50]))
-    print(f"H_ACCEPT : {H_ACCEPT}")
-    print(d["d_accept"].quantile([0.68, 0.95, 0.997]))
-    print("DUMP END")
-    # print(d['d_commit'].quantile([.68, .95, .997]))
-
-    tps_accept = tps_accept.reindex(range(math.ceil(max(d["rt_accept"]))), fill_value=0)
+    # # H_COMMIT.append(d['d_commit'])
+    # print("DUMP")
+    # print(d["d_accept"].quantile([0.50]))
+    # print(f"H_ACCEPT : {H_ACCEPT}")
+    # print(d["d_accept"].quantile([0.68, 0.95, 0.997]))
+    # print("DUMP END")
+    # # print(d['d_commit'].quantile([.68, .95, .997]))
+    # print( f" MEDIAN : {tps_accept.median()}")
+    # print( f" MEANS : {tps_accept.mean()}")
+    #tps_accept = tps_accept.reindex(range(math.ceil(max(d["rt_accept"]))), fill_value=0)
+    tps_accept = tps_accept.reindex(range(math.ceil(max(d["rt_accept"]))))
     S_ACCEPT.append(tps_accept)
     M_ACCEPT.append(
         {"median": round(tps_accept.median()), "mean": round(tps_accept.mean())}
     )
+    print( f" MEDIAN : {tps_accept.median()}")
+    print( f" MEANS : {tps_accept.mean()}")
 
     # tps_commit = tps_commit.reindex(range(math.ceil(max(d['rt_commit']))), fill_value=0)
     # S_COMMIT.append(tps_commit)
@@ -75,18 +80,18 @@ for csvfile in sys.argv[1:]:
     #    'mean': round(tps_commit.mean())
     # })
 
-print(f"S_ACCEPT  : {S_ACCEPT}")
+# print(f"S_ACCEPT  : {S_ACCEPT}")
 # for i, tps in enumerate(S_ACCEPT):
 #    S_ACCEPT[i] = tps.reindex(range(longest), fill_value=0)
 
 # for i, tps in enumerate(S_COMMIT):
 #    S_COMMIT[i] = tps.reindex(range(longest), fill_value=0)
 
-p[0][0].set_title("Time to accept transactions")
-p[0][0].hist(H_ACCEPT, bins=25)
-p[0][0].set_yscale("log")
-p[0][0].set_xlabel("Time (seconds)")
-p[0][0].set_ylabel("Number of transactions")
+p[0].set_title("Time to accept transactions")
+p[0].hist(H_ACCEPT, bins=25)
+p[0].set_yscale("log")
+p[0].set_xlabel("Time (seconds)")
+p[0].set_ylabel("Number of transactions")
 
 # p[1][0].set_title('Time to finalize transactions')
 # p[1][0].hist(H_COMMIT, bins=25)
@@ -94,22 +99,22 @@ p[0][0].set_ylabel("Number of transactions")
 # p[1][0].set_xlabel('Time (seconds)')
 # p[1][0].set_ylabel('Number of transactions')
 
-print(f"M_ACCEPT  : {M_ACCEPT}")
-print(f"S_ACCEPT  : {S_ACCEPT}")
+# print(f"M_ACCEPT  : {M_ACCEPT}")
+# print(f"S_ACCEPT  : {S_ACCEPT}")
 
-p[0][1].set_title("Accepted transactions per second")
+p[1].set_title("Accepted transactions per second")
 # p[0][1].set_yscale('log')
-p[0][1].set_xlabel("Time (seconds)")
-p[0][1].set_ylabel("Amount")
+p[1].set_xlabel("Time (seconds)")
+p[1].set_ylabel("Amount")
 for tps, vals in zip(S_ACCEPT, M_ACCEPT):
     x = tps.index
-    p[0][1].scatter(x, tps, s=1)
+    p[1].scatter(x, tps, s=1)
     # p[0][1].plot(x, [median] * len(x), '--k')
 
     bbox_props = dict(boxstyle="round", fc="w", ec="0.5", alpha=0.9)
-    p[0][1].text(
-        0,
-        100,
+    p[1].text(
+        20,
+        4,
         "median: {median} tx/s\nmean: {mean} tx/s".format(**vals),
         ha="left",
         va="bottom",
@@ -133,7 +138,7 @@ for tps, vals in zip(S_ACCEPT, M_ACCEPT):
 #            bbox=bbox_props)
 #
 plt.subplots_adjust(
-    left=0.07, right=0.99, bottom=0.05, top=0.92, wspace=0.15, hspace=0.3
+    left=0.07, right=0.99, bottom=0.05, top=0.85, wspace=0.15, hspace=0.3
 )
 plt.savefig(file + ".png")
 # plt.show()
